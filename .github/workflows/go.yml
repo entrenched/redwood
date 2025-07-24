@@ -20,8 +20,7 @@ jobs:
           go-version: '1.21'
 
       - name: Build Redwood binary
-        run: |
-          go build -o redwood ./cmd/redwood
+        run: go build -o redwood .
 
       - name: Set up WireGuard connection
         uses: niklaskeerl/easy-wireguard-action@v2
