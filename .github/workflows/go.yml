@@ -3,7 +3,7 @@ name: Redwood Deploy
 on:
   push:
     branches:
-      - main  # Adjust if needed
+      - master
   workflow_dispatch:
 
 jobs:
