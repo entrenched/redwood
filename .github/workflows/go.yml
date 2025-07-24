@@ -1,0 +1,47 @@
+name: Redwood Deploy
+
+on:
+  push:
+    branches:
+      - master    # or your desired branch
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.MODULE_ACCESS_TOKEN }}
+
+      - name: Set up
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Build Redwood binary
+        run: |
+          go build -o redwood ./cmd/redwood
+
+      - name: Set up WireGuard connection
+        uses: niklaskeerl/easy-wireguard-action@v2
+        with:
+          WG_CONFIG_FILE: ${{ secrets.WG_CONFIG_FILE }}
+
+      - name: Install SSH client, sshpass and rsync
+        run: sudo apt-get update && sudo apt-get install -y openssh-client sshpass rsync
+
+      - name: Backup current live directory on server
+        run: |
+          sshpass -p ${{ secrets.SSH_PASSWORD }} ssh -o StrictHostKeyChecking=no support@10.100.90.77 "sudo rsync -avz --delete /var/www/redwood/ /var/www/redwood.bak/"
+
+      - name: Upload Redwood binary to server
+        run: |
+          sshpass -p ${{ secrets.SSH_PASSWORD }} rsync -avz --delete ./redwood support@10.100.90.77:/var/www/redwood/
+
+      - name: Restart Redwood service on server
+        run: |
+          sshpass -p ${{ secrets.SSH_PASSWORD }} ssh -o StrictHostKeyChecking=no support@10.100.90.77 'sudo systemctl restart redwood.service'
