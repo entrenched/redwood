@@ -3,7 +3,7 @@ name: Redwood Deploy
 on:
   push:
     branches:
-      - main    # Adjust this if your branch is different
+      - main  # Adjust if needed
   workflow_dispatch:
 
 jobs:
@@ -30,17 +30,21 @@ jobs:
       - name: Install SSH tools
         run: sudo apt-get update && sudo apt-get install -y openssh-client sshpass rsync
 
-      - name: Ensure target directories exist and back up old version
+      - name: Ensure directories exist and back up current deployment
         run: |
           sshpass -p ${{ secrets.SSH_PASSWORD }} ssh -o StrictHostKeyChecking=no support@10.100.90.77 \
             "echo '${{ secrets.SSH_PASSWORD }}' | sudo -S bash -c 'mkdir -p /var/www/redwood /var/www/redwood.bak && rsync -avz --delete /var/www/redwood/ /var/www/redwood.bak/'"
 
-      - name: Upload Redwood binary to server
+      - name: Upload Redwood binary to server home directory
         run: |
           sshpass -p ${{ secrets.SSH_PASSWORD }} rsync -avz --delete \
             -e "ssh -o StrictHostKeyChecking=no" \
-            --rsync-path="echo '${{ secrets.SSH_PASSWORD }}' | sudo -S rsync" \
-            ./redwood support@10.100.90.77:/var/www/redwood/
+            ./redwood support@10.100.90.77:/home/support/redwood.tmp
+
+      - name: Move binary into place with sudo
+        run: |
+          sshpass -p ${{ secrets.SSH_PASSWORD }} ssh -o StrictHostKeyChecking=no support@10.100.90.77 \
+            "echo '${{ secrets.SSH_PASSWORD }}' | sudo -S bash -c 'mv /home/support/redwood.tmp /var/www/redwood/redwood && chmod +x /var/www/redwood/redwood'"
 
       - name: Restart Redwood service on server
         run: |
