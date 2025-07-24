@@ -32,9 +32,8 @@ jobs:
 
       - name: Backup current live directory on server
         run: |
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no support@10.100.90.77 \
-          "echo '${{ secrets.SSH_PASSWORD }}' | sudo -S rsync -avz --delete /var/www/redwood/ /var/www/redwood.bak/"
-
+          sshpass -p ${{ secrets.SSH_PASSWORD }} ssh -o StrictHostKeyChecking=no support@10.100.90.77 \
+          "echo '${{ secrets.SSH_PASSWORD }}' | sudo -S bash -c 'mkdir -p /var/www/redwood /var/www/redwood.bak && rsync -avz --delete /var/www/redwood/ /var/www/redwood.bak/'"
 
       - name: Upload Redwood binary to server
         run: |
@@ -42,4 +41,5 @@ jobs:
 
       - name: Restart Redwood service on server
         run: |
-          sshpass -p ${{ secrets.SSH_PASSWORD }} ssh -o StrictHostKeyChecking=no support@10.100.90.77 'sudo systemctl restart redwood.service'
+          sshpass -p ${{ secrets.SSH_PASSWORD }} ssh -o StrictHostKeyChecking=no support@10.100.90.77 \
+          "echo '${{ secrets.SSH_PASSWORD }}' | sudo -S systemctl restart redwood.service"
