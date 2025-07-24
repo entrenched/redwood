@@ -3,7 +3,7 @@ name: Redwood Deploy
 on:
   push:
     branches:
-      - main    # or your preferred branch
+      - main    # Adjust this if your branch is different
   workflow_dispatch:
 
 jobs:
@@ -14,7 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Go 1.21 (latest as of 2025)
+      - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.21'
@@ -27,20 +27,22 @@ jobs:
         with:
           WG_CONFIG_FILE: ${{ secrets.WG_CONFIG_FILE }}
 
-      - name: Install SSH client, sshpass and rsync
+      - name: Install SSH tools
         run: sudo apt-get update && sudo apt-get install -y openssh-client sshpass rsync
+
+      - name: Ensure target directories exist and back up old version
+        run: |
+          sshpass -p ${{ secrets.SSH_PASSWORD }} ssh -o StrictHostKeyChecking=no support@10.100.90.77 \
+            "echo '${{ secrets.SSH_PASSWORD }}' | sudo -S bash -c 'mkdir -p /var/www/redwood /var/www/redwood.bak && rsync -avz --delete /var/www/redwood/ /var/www/redwood.bak/'"
 
       - name: Upload Redwood binary to server
         run: |
           sshpass -p ${{ secrets.SSH_PASSWORD }} rsync -avz --delete \
-          --rsync-path="echo '${{ secrets.SSH_PASSWORD }}' | sudo -S rsync" \
-          ./redwood support@10.100.90.77:/var/www/redwood/
-
-      - name: Upload Redwood binary to server
-        run: |
-          sshpass -p ${{ secrets.SSH_PASSWORD }} rsync -avz --delete ./redwood support@10.100.90.77:/var/www/redwood/
+            -e "ssh -o StrictHostKeyChecking=no" \
+            --rsync-path="echo '${{ secrets.SSH_PASSWORD }}' | sudo -S rsync" \
+            ./redwood support@10.100.90.77:/var/www/redwood/
 
       - name: Restart Redwood service on server
         run: |
           sshpass -p ${{ secrets.SSH_PASSWORD }} ssh -o StrictHostKeyChecking=no support@10.100.90.77 \
-          "echo '${{ secrets.SSH_PASSWORD }}' | sudo -S systemctl restart redwood.service"
+            "echo '${{ secrets.SSH_PASSWORD }}' | sudo -S systemctl restart redwood.service"
