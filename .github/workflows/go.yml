@@ -30,10 +30,11 @@ jobs:
       - name: Install SSH client, sshpass and rsync
         run: sudo apt-get update && sudo apt-get install -y openssh-client sshpass rsync
 
-      - name: Backup current live directory on server
+      - name: Upload Redwood binary to server
         run: |
-          sshpass -p ${{ secrets.SSH_PASSWORD }} ssh -o StrictHostKeyChecking=no support@10.100.90.77 \
-          "echo '${{ secrets.SSH_PASSWORD }}' | sudo -S bash -c 'mkdir -p /var/www/redwood /var/www/redwood.bak && rsync -avz --delete /var/www/redwood/ /var/www/redwood.bak/'"
+          sshpass -p ${{ secrets.SSH_PASSWORD }} rsync -avz --delete \
+          --rsync-path="echo '${{ secrets.SSH_PASSWORD }}' | sudo -S rsync" \
+          ./redwood support@10.100.90.77:/var/www/redwood/
 
       - name: Upload Redwood binary to server
         run: |
