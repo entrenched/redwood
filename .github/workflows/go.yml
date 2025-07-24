@@ -3,7 +3,7 @@ name: Redwood Deploy
 on:
   push:
     branches:
-      - master    # or your desired branch
+      - main    # or your preferred branch
   workflow_dispatch:
 
 jobs:
@@ -13,14 +13,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          token: ${{ secrets.MODULE_ACCESS_TOKEN }}
 
-      - name: Set up
+      - name: Set up Go 1.21 (latest as of 2025)
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24'
+          go-version: '1.21'
 
       - name: Build Redwood binary
         run: |
